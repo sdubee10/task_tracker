@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>요청서 빌더 - TaskFlow</title>
+    <link rel="icon" href="data:,">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/form-builder.css">
+</head>
+<body class="form-builder-page">
+    <div class="builder-app">
+        <!-- 헤더 -->
+        <header class="builder-header">
+            <div class="builder-logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2"/>
+                        <path d="M3 9h18"/>
+                        <path d="M9 21V9"/>
+                    </svg>
+                </div>
+                <span class="logo-text">요청서 빌더</span>
+            </div>
+            <div class="builder-actions">
+                <!-- 테마 선택기 -->
+                <div class="theme-selector">
+                    <button class="btn-icon theme-toggle" onclick="toggleThemeDropdown()" title="테마 변경">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="5"/>
+                            <line x1="12" y1="1" x2="12" y2="3"/>
+                            <line x1="12" y1="21" x2="12" y2="23"/>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                            <line x1="1" y1="12" x2="3" y2="12"/>
+                            <line x1="21" y1="12" x2="23" y2="12"/>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                        </svg>
+                    </button>
+                    <div class="theme-dropdown" id="themeDropdown">
+                        <div class="theme-dropdown-header">테마 선택</div>
+                        <button class="theme-option" data-theme="dark" onclick="setTheme('dark')">
+                            <span class="theme-preview dark"></span>
+                            <span>다크 모드</span>
+                        </button>
+                        <button class="theme-option" data-theme="light" onclick="setTheme('light')">
+                            <span class="theme-preview light"></span>
+                            <span>라이트 모드</span>
+                        </button>
+                        <button class="theme-option" data-theme="ocean" onclick="setTheme('ocean')">
+                            <span class="theme-preview ocean"></span>
+                            <span>오션 블루</span>
+                        </button>
+                        <button class="theme-option" data-theme="forest" onclick="setTheme('forest')">
+                            <span class="theme-preview forest"></span>
+                            <span>포레스트</span>
+                        </button>
+                        <button class="theme-option" data-theme="sunset" onclick="setTheme('sunset')">
+                            <span class="theme-preview sunset"></span>
+                            <span>선셋</span>
+                        </button>
+                        <button class="theme-option" data-theme="purple" onclick="setTheme('purple')">
+                            <span class="theme-preview purple"></span>
+                            <span>퍼플</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="header-divider"></div>
+                <button class="btn-icon" onclick="undoCanvas()" title="실행 취소 (Ctrl+Z)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 7v6h6"/>
+                        <path d="M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13"/>
+                    </svg>
+                </button>
+                <button class="btn-icon" onclick="redoCanvas()" title="다시 실행 (Ctrl+Y)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 7v6h-6"/>
+                        <path d="M3 17a9 9 0 019-9 9 9 0 016 2.3l3 2.7"/>
+                    </svg>
+                </button>
+                <button class="btn-icon" onclick="clearCanvas()" title="전체 삭제">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                    </svg>
+                </button>
+                <div class="header-divider"></div>
+                <button class="btn-secondary" onclick="openTemplateListModal()" title="내 템플릿 보기">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                        <line x1="12" y1="11" x2="12" y2="17"/>
+                        <line x1="9" y1="14" x2="15" y2="14"/>
+                    </svg>
+                    내 템플릿
+                </button>
+                <button class="btn-secondary" onclick="previewForm()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                        <line x1="8" y1="21" x2="16" y2="21"/>
+                        <line x1="12" y1="17" x2="12" y2="21"/>
+                    </svg>
+                    미리보기
+                </button>
+                <button class="btn-primary" onclick="openSaveTemplateModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                        <polyline points="17 21 17 13 7 13 7 21"/>
+                        <polyline points="7 3 7 8 15 8"/>
+                    </svg>
+                    템플릿 저장
+                </button>
+            </div>
+        </header>
+
+        <!-- 템플릿 선택 영역 -->
+        <section class="template-showcase">
+            <div class="template-showcase-header">
+                <h2>⭐ 추천 신청서 템플릿</h2>
+                <span class="template-count" id="mainTemplateCount">10개</span>
+            </div>
+            <div class="template-showcase-grid" id="mainTemplatesGrid">
+                <!-- 추천 템플릿 10개가 여기에 렌더링됨 -->
+            </div>
+            
+            <div class="template-showcase-header secondary">
+                <h2>📁 기타 신청서 템플릿</h2>
+                <span class="template-count" id="subTemplateCount">20개</span>
+                <button class="toggle-templates-btn" onclick="toggleSubTemplates()">
+                    <span id="toggleSubText">펼치기</span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="toggleSubIcon">
+                        <path d="M6 9l6 6 6-6"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="template-showcase-grid sub-templates collapsed" id="subTemplatesGrid">
+                <!-- 기타 템플릿 20개가 여기에 렌더링됨 -->
+            </div>
+        </section>
+
+        <!-- 메인 컨텐츠 -->
+        <main class="builder-main">
+            <!-- 컴포넌트 팔레트 -->
+            <aside class="component-palette">
+                <div class="palette-search">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/>
+                        <path d="M21 21l-4.35-4.35"/>
+                    </svg>
+                    <input type="text" id="paletteSearch" placeholder="컴포넌트 검색...">
+                </div>
+
+                <div class="palette-sections">
+                    <!-- 정보 표시 (제일 위로 이동) -->
+                    <div class="palette-section">
+                        <div class="palette-section-header" onclick="togglePaletteSection(this)">
+                            <span>📄 정보 표시</span>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M6 9l6 6 6-6"/>
+                            </svg>
+                        </div>
+                        <div class="palette-items">
+                            <div class="palette-item" draggable="true" data-component="section-header">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M4 12h16M4 6h16M4 18h10"/>
+                                </svg>
+                                <span>섹션 제목</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="divider">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="2" y1="12" x2="22" y2="12"/>
+                                </svg>
+                                <span>구분선</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="info-text">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <line x1="12" y1="16" x2="12" y2="12"/>
+                                    <line x1="12" y1="8" x2="12.01" y2="8"/>
+                                </svg>
+                                <span>안내 텍스트</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="file-upload">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                                    <polyline points="17 8 12 3 7 8"/>
+                                    <line x1="12" y1="3" x2="12" y2="15"/>
+                                </svg>
+                                <span>파일 업로드</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="image-upload">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                                    <polyline points="21 15 16 10 5 21"/>
+                                </svg>
+                                <span>이미지 업로드</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="link-input">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/>
+                                    <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>
+                                </svg>
+                                <span>URL 링크</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 기본 입력 (전화번호 제외) -->
+                    <div class="palette-section">
+                        <div class="palette-section-header" onclick="togglePaletteSection(this)">
+                            <span>📝 기본 입력</span>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M6 9l6 6 6-6"/>
+                            </svg>
+                        </div>
+                        <div class="palette-items">
+                            <div class="palette-item" draggable="true" data-component="text-input">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                </svg>
+                                <span>텍스트 입력</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="textarea">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                                    <polyline points="14 2 14 8 20 8"/>
+                                    <line x1="16" y1="13" x2="8" y2="13"/>
+                                    <line x1="16" y1="17" x2="8" y2="17"/>
+                                </svg>
+                                <span>텍스트 영역</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="number-input">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="4" y="4" width="16" height="16" rx="2"/>
+                                    <path d="M9 9h.01M15 9h.01M9 15h.01M15 15h.01M12 12h.01"/>
+                                </svg>
+                                <span>숫자 입력</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="date-input">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                    <line x1="16" y1="2" x2="16" y2="6"/>
+                                    <line x1="8" y1="2" x2="8" y2="6"/>
+                                    <line x1="3" y1="10" x2="21" y2="10"/>
+                                </svg>
+                                <span>날짜 선택</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="select">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M6 9l6 6 6-6"/>
+                                </svg>
+                                <span>드롭다운</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="email-input">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                                    <polyline points="22,6 12,13 2,6"/>
+                                </svg>
+                                <span>이메일 입력</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 선택 항목 (6개) -->
+                    <div class="palette-section">
+                        <div class="palette-section-header" onclick="togglePaletteSection(this)">
+                            <span>☑️ 선택 항목</span>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M6 9l6 6 6-6"/>
+                            </svg>
+                        </div>
+                        <div class="palette-items">
+                            <div class="palette-item" draggable="true" data-component="checkbox">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="9 11 12 14 22 4"/>
+                                    <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+                                </svg>
+                                <span>체크박스</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="radio">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <circle cx="12" cy="12" r="4" fill="currentColor"/>
+                                </svg>
+                                <span>라디오 버튼</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="rating">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                                </svg>
+                                <span>별점 평가</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="slider">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="4" y1="12" x2="20" y2="12"/>
+                                    <circle cx="12" cy="12" r="2" fill="currentColor"/>
+                                </svg>
+                                <span>슬라이더</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="toggle-switch">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="1" y="5" width="22" height="14" rx="7" ry="7"/>
+                                    <circle cx="16" cy="12" r="3" fill="currentColor"/>
+                                </svg>
+                                <span>토글 스위치</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="yes-no-select">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <path d="M8 12l2 2 4-4"/>
+                                </svg>
+                                <span>예/아니오</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 업무 측정 (7개) -->
+                    <div class="palette-section">
+                        <div class="palette-section-header" onclick="togglePaletteSection(this)">
+                            <span>📊 업무 측정</span>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M6 9l6 6 6-6"/>
+                            </svg>
+                        </div>
+                        <div class="palette-items">
+                            <div class="palette-item" draggable="true" data-component="time-estimate">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <polyline points="12 6 12 12 16 14"/>
+                                </svg>
+                                <span>예상 시간</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="priority-select">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                                </svg>
+                                <span>우선순위</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="difficulty">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"/>
+                                </svg>
+                                <span>난이도</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="progress">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="12" y1="20" x2="12" y2="10"/>
+                                    <line x1="18" y1="20" x2="18" y2="4"/>
+                                    <line x1="6" y1="20" x2="6" y2="16"/>
+                                </svg>
+                                <span>진행률</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="deadline-input">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                    <line x1="16" y1="2" x2="16" y2="6"/>
+                                    <line x1="8" y1="2" x2="8" y2="6"/>
+                                    <path d="M12 11v4l2 2"/>
+                                </svg>
+                                <span>마감일 설정</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="work-type-select">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                                    <polyline points="14 2 14 8 20 8"/>
+                                    <line x1="12" y1="18" x2="12" y2="12"/>
+                                    <line x1="9" y1="15" x2="15" y2="15"/>
+                                </svg>
+                                <span>업무 유형</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="impact-level">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                                </svg>
+                                <span>영향도 평가</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 평가 항목 (8개) -->
+                    <div class="palette-section">
+                        <div class="palette-section-header" onclick="togglePaletteSection(this)">
+                            <span>⭐ 평가 항목</span>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M6 9l6 6 6-6"/>
+                            </svg>
+                        </div>
+                        <div class="palette-items">
+                            <div class="palette-item" draggable="true" data-component="tech-skill-eval">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="16 18 22 12 16 6"/>
+                                    <polyline points="8 6 2 12 8 18"/>
+                                </svg>
+                                <span>기술 역량 평가</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="soft-skill-eval">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                                    <circle cx="9" cy="7" r="4"/>
+                                    <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+                                    <path d="M16 3.13a4 4 0 010 7.75"/>
+                                </svg>
+                                <span>소프트 스킬 평가</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="performance-eval">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 20V10"/>
+                                    <path d="M18 20V4"/>
+                                    <path d="M6 20v-4"/>
+                                </svg>
+                                <span>성과 평가</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="competency-matrix">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                    <line x1="3" y1="9" x2="21" y2="9"/>
+                                    <line x1="3" y1="15" x2="21" y2="15"/>
+                                    <line x1="9" y1="3" x2="9" y2="21"/>
+                                    <line x1="15" y1="3" x2="15" y2="21"/>
+                                </svg>
+                                <span>역량 매트릭스</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="goal-achievement">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <circle cx="12" cy="12" r="6"/>
+                                    <circle cx="12" cy="12" r="2"/>
+                                </svg>
+                                <span>목표 달성도</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="feedback-section">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+                                </svg>
+                                <span>피드백 섹션</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="kpi-tracker">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21.21 15.89A10 10 0 118 2.83"/>
+                                    <path d="M22 12A10 10 0 0012 2v10z"/>
+                                </svg>
+                                <span>KPI 추적</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="satisfaction-survey">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+                                    <line x1="9" y1="9" x2="9.01" y2="9"/>
+                                    <line x1="15" y1="9" x2="15.01" y2="9"/>
+                                </svg>
+                                <span>만족도 조사</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 요청자 정보 (6개) -->
+                    <div class="palette-section">
+                        <div class="palette-section-header" onclick="togglePaletteSection(this)">
+                            <span>👤 요청자 정보</span>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M6 9l6 6 6-6"/>
+                            </svg>
+                        </div>
+                        <div class="palette-items">
+                            <div class="palette-item" draggable="true" data-component="requester-info">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                                    <circle cx="12" cy="7" r="4"/>
+                                </svg>
+                                <span>요청자 정보</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="department-select">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                                    <circle cx="9" cy="7" r="4"/>
+                                    <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+                                    <path d="M16 3.13a4 4 0 010 7.75"/>
+                                </svg>
+                                <span>부서 선택</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="approval-flow">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="9 11 12 14 22 4"/>
+                                    <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+                                </svg>
+                                <span>결재 라인</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="team-member-select">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                                    <circle cx="9" cy="7" r="4"/>
+                                    <line x1="19" y1="8" x2="19" y2="14"/>
+                                    <line x1="22" y1="11" x2="16" y2="11"/>
+                                </svg>
+                                <span>담당자 지정</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="project-select">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+                                </svg>
+                                <span>프로젝트 선택</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="cost-estimate">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="12" y1="1" x2="12" y2="23"/>
+                                    <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+                                </svg>
+                                <span>비용 산정</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 추가 입력 컴포넌트 -->
+                    <div class="palette-section">
+                        <div class="palette-section-header" onclick="togglePaletteSection(this)">
+                            <span>📋 추가 입력</span>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M6 9l6 6 6-6"/>
+                            </svg>
+                        </div>
+                        <div class="palette-items">
+                            <div class="palette-item" draggable="true" data-component="date-range">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="4" width="18" height="18" rx="2"/>
+                                    <path d="M16 2v4M8 2v4M3 10h18"/>
+                                    <path d="M8 14h4"/>
+                                </svg>
+                                <span>기간 선택</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="time-input">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <path d="M12 6v6l4 2"/>
+                                </svg>
+                                <span>시간 입력</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="address-input">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/>
+                                    <circle cx="12" cy="10" r="3"/>
+                                </svg>
+                                <span>주소 입력</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="signature-pad">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 19l7-7 3 3-7 7-3-3z"/>
+                                    <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
+                                    <path d="M2 2l7.586 7.586"/>
+                                </svg>
+                                <span>서명</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="rich-text">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                                    <path d="M14 2v6h6"/>
+                                    <path d="M16 13H8M16 17H8M10 9H8"/>
+                                </svg>
+                                <span>서식 텍스트</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="table-input">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                    <path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>
+                                </svg>
+                                <span>표 입력</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="budget-breakdown">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="2" y="3" width="20" height="18" rx="2"/>
+                                    <path d="M2 9h20M8 21V9"/>
+                                </svg>
+                                <span>예산 내역</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="risk-assessment">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                                    <line x1="12" y1="9" x2="12" y2="13"/>
+                                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                                </svg>
+                                <span>리스크 평가</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="checklist">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M9 11l3 3L22 4"/>
+                                    <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+                                </svg>
+                                <span>체크리스트</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="multi-select">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                    <path d="M9 9h6M9 13h6M9 17h4"/>
+                                </svg>
+                                <span>다중 선택</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="status-select">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <path d="M12 8v4l3 3"/>
+                                </svg>
+                                <span>상태 선택</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="version-input">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 3v18M3 12h18"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                                <span>버전 정보</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="environment-select">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="2" y="3" width="20" height="14" rx="2"/>
+                                    <path d="M8 21h8M12 17v4"/>
+                                </svg>
+                                <span>환경 선택</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 개발자 역량 평가 -->
+                    <div class="palette-section">
+                        <div class="palette-section-header" onclick="togglePaletteSection(this)">
+                            <span>👨‍💻 개발자 역량</span>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M6 9l6 6 6-6"/>
+                            </svg>
+                        </div>
+                        <div class="palette-items">
+                            <div class="palette-item" draggable="true" data-component="code-quality-eval">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="16 18 22 12 16 6"/>
+                                    <polyline points="8 6 2 12 8 18"/>
+                                    <line x1="12" y1="2" x2="12" y2="22"/>
+                                </svg>
+                                <span>코드 품질 평가</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="dev-skill-radar">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/>
+                                    <line x1="12" y1="22" x2="12" y2="12"/>
+                                    <line x1="22" y1="8.5" x2="12" y2="12"/>
+                                    <line x1="2" y1="8.5" x2="12" y2="12"/>
+                                </svg>
+                                <span>역량 레이더</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="experience-level">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 20h9"/>
+                                    <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                                </svg>
+                                <span>경험 수준</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="contribution-tracker">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                                    <circle cx="8.5" cy="7" r="4"/>
+                                    <line x1="20" y1="8" x2="20" y2="14"/>
+                                    <line x1="23" y1="11" x2="17" y2="11"/>
+                                </svg>
+                                <span>기여도 추적</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="problem-solving-eval">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/>
+                                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                                </svg>
+                                <span>문제해결 평가</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 요청자 역량 평가 -->
+                    <div class="palette-section">
+                        <div class="palette-section-header" onclick="togglePaletteSection(this)">
+                            <span>📝 요청자 역량</span>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M6 9l6 6 6-6"/>
+                            </svg>
+                        </div>
+                        <div class="palette-items">
+                            <div class="palette-item" draggable="true" data-component="requirement-quality">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                                    <polyline points="14 2 14 8 20 8"/>
+                                    <path d="M9 15l2 2 4-4"/>
+                                </svg>
+                                <span>요구사항 품질</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="communication-eval">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/>
+                                </svg>
+                                <span>커뮤니케이션</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="stakeholder-engagement">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                                    <circle cx="9" cy="7" r="4"/>
+                                    <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+                                    <path d="M16 3.13a4 4 0 010 7.75"/>
+                                </svg>
+                                <span>참여도 평가</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="business-value-assessment">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="12" y1="1" x2="12" y2="23"/>
+                                    <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+                                </svg>
+                                <span>비즈니스 가치</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 프로젝트 성과 평가 -->
+                    <div class="palette-section">
+                        <div class="palette-section-header" onclick="togglePaletteSection(this)">
+                            <span>📈 프로젝트 성과</span>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M6 9l6 6 6-6"/>
+                            </svg>
+                        </div>
+                        <div class="palette-items">
+                            <div class="palette-item" draggable="true" data-component="project-health">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                                </svg>
+                                <span>프로젝트 건강도</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="milestone-tracker">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+                                    <line x1="4" y1="22" x2="4" y2="15"/>
+                                </svg>
+                                <span>마일스톤 추적</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="sprint-velocity">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                                </svg>
+                                <span>스프린트 속도</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="defect-density">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+                                </svg>
+                                <span>결함 밀도</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="delivery-metrics">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="1" y="3" width="15" height="13"/>
+                                    <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
+                                    <circle cx="5.5" cy="18.5" r="2.5"/>
+                                    <circle cx="18.5" cy="18.5" r="2.5"/>
+                                </svg>
+                                <span>배포 지표</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="team-performance">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                                    <circle cx="9" cy="7" r="4"/>
+                                    <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+                                    <path d="M16 3.13a4 4 0 010 7.75"/>
+                                </svg>
+                                <span>팀 성과</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="roi-calculator">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="4" y="2" width="16" height="20" rx="2"/>
+                                    <line x1="8" y1="6" x2="16" y2="6"/>
+                                    <line x1="16" y1="14" x2="16" y2="18"/>
+                                    <line x1="8" y1="10" x2="8" y2="10.01"/>
+                                    <line x1="12" y1="10" x2="12" y2="10.01"/>
+                                    <line x1="16" y1="10" x2="16" y2="10.01"/>
+                                    <line x1="8" y1="14" x2="8" y2="14.01"/>
+                                    <line x1="12" y1="14" x2="12" y2="14.01"/>
+                                    <line x1="8" y1="18" x2="8" y2="18.01"/>
+                                    <line x1="12" y1="18" x2="12" y2="18.01"/>
+                                </svg>
+                                <span>ROI 계산</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="resource-utilization">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21.21 15.89A10 10 0 118 2.83"/>
+                                    <path d="M22 12A10 10 0 0012 2v10z"/>
+                                </svg>
+                                <span>리소스 활용</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="scope-change-log">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                                    <polyline points="14 2 14 8 20 8"/>
+                                    <line x1="12" y1="18" x2="12" y2="12"/>
+                                    <line x1="9" y1="15" x2="15" y2="15"/>
+                                </svg>
+                                <span>범위 변경 이력</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-component="lesson-learned">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <line x1="12" y1="16" x2="12" y2="12"/>
+                                    <line x1="12" y1="8" x2="12.01" y2="8"/>
+                                </svg>
+                                <span>교훈 기록</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- 캔버스 영역 -->
+            <div class="canvas-area">
+                <div class="canvas-toolbar">
+                    <input type="text" id="formTitle" class="form-title-input" placeholder="요청서 제목을 입력하세요" value="새 개발 요청서">
+                    <div class="grid-size-selector">
+                        <label>그리드:</label>
+                        <select id="gridColumns" onchange="updateGridColumns()">
+                            <option value="1">1열</option>
+                            <option value="2" selected>2열</option>
+                            <option value="3">3열</option>
+                            <option value="4">4열</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="canvas-wrapper">
+                    <div class="form-canvas" id="formCanvas" data-columns="2">
+                        <div class="canvas-placeholder">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M12 8v8M8 12h8"/>
+                            </svg>
+                            <p>컴포넌트를 여기에 드래그하여 요청서를 만드세요</p>
+                            <span class="canvas-hint">한 행에 여러 컴포넌트를 배치할 수 있습니다</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 속성 패널 -->
+            <aside class="properties-panel" id="propertiesPanel">
+                <div class="panel-tabs">
+                    <button class="panel-tab active" data-tab="properties">속성</button>
+                    <button class="panel-tab" data-tab="style">스타일</button>
+                </div>
+                <div class="panel-body" id="propertiesBody">
+                    <div class="empty-state small">
+                        <p>컴포넌트를 선택하면<br>속성을 편집할 수 있습니다</p>
+                    </div>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <!-- 템플릿 저장 모달 -->
+    <div class="modal-overlay" id="saveTemplateModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>템플릿 저장</h2>
+                <button class="modal-close" onclick="closeSaveTemplateModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <form id="saveTemplateForm" onsubmit="saveTemplate(event)">
+                <div class="form-group">
+                    <label for="templateName">템플릿 이름 *</label>
+                    <input type="text" id="templateName" required placeholder="예: 신규 기능 개발 요청서">
+                </div>
+                <div class="form-group">
+                    <label for="templateDescription">설명</label>
+                    <textarea id="templateDescription" rows="2" placeholder="템플릿에 대한 설명을 입력하세요"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="templateCategory">카테고리</label>
+                    <select id="templateCategory">
+                        <option value="DBA">🗄️ DBA</option>
+                        <option value="Frontend">🎨 Frontend</option>
+                        <option value="Backend">⚙️ Backend</option>
+                        <option value="Infra">🖥️ Infra</option>
+                        <option value="공통" selected>📋 공통</option>
+                        <option value="QA">🧪 QA</option>
+                        <option value="보안">🔒 보안</option>
+                        <option value="기획">📝 기획</option>
+                        <option value="기타">📁 기타</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" onclick="closeSaveTemplateModal()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                        취소
+                    </button>
+                    <button type="submit" class="btn-primary">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                            <polyline points="17 21 17 13 7 13 7 21"/>
+                            <polyline points="7 3 7 8 15 8"/>
+                        </svg>
+                        템플릿 저장
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 템플릿 목록 모달 -->
+    <div class="modal-overlay" id="templateListModal">
+        <div class="modal modal-lg">
+            <div class="modal-header">
+                <h2>저장된 템플릿</h2>
+                <button class="modal-close" onclick="closeTemplateListModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="template-list" id="templateList">
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+                        </svg>
+                        <p>저장된 템플릿이 없습니다</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 폼 미리보기 모달 -->
+    <div class="modal-overlay" id="previewModal">
+        <div class="modal modal-xl">
+            <div class="modal-header">
+                <h2 id="previewTitle">요청서 미리보기</h2>
+                <button class="modal-close" onclick="closePreviewModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="preview-form" id="previewForm"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closePreviewModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                    닫기
+                </button>
+                <button class="btn-primary" onclick="submitPreviewForm()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                        <polyline points="22 4 12 14.01 9 11.01"/>
+                    </svg>
+                    요청서 제출
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 토스트 알림 -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="js/auth-check.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="form-builder.js"></script>
+    <script>
+        // 디버깅: 함수 정의 확인
+        console.log('=== Form Builder Functions Check ===');
+        console.log('openSaveTemplateModal:', typeof openSaveTemplateModal);
+        console.log('openTemplateListModal:', typeof openTemplateListModal);
+        console.log('previewForm:', typeof previewForm);
+        
+        // 함수가 없으면 전역으로 재정의
+        if (typeof window.openSaveTemplateModal === 'undefined') {
+            console.error('openSaveTemplateModal is not defined!');
+        }
+        if (typeof window.openTemplateListModal === 'undefined') {
+            console.error('openTemplateListModal is not defined!');
+        }
+        if (typeof window.previewForm === 'undefined') {
+            console.error('previewForm is not defined!');
+        }
+    </script>
+</body>
+</html>
+

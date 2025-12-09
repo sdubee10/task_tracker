@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>업무 분석 대시보드 - TaskFlow</title>
+    <link rel="icon" href="data:,">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/analytics.css">
+</head>
+<body class="analytics-page">
+    <div class="analytics-app">
+        <!-- 헤더 -->
+        <header class="analytics-header">
+            <div class="header-left">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21.21 15.89A10 10 0 118 2.83"/>
+                        <path d="M22 12A10 10 0 0012 2v10z"/>
+                    </svg>
+                </div>
+                <span class="logo-text">업무 분석 대시보드</span>
+            </div>
+            <div class="header-center">
+                <div class="analysis-tabs">
+                    <button class="analysis-tab active" data-view="overview" onclick="switchView('overview')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="7" height="7"/>
+                            <rect x="14" y="3" width="7" height="7"/>
+                            <rect x="14" y="14" width="7" height="7"/>
+                            <rect x="3" y="14" width="7" height="7"/>
+                        </svg>
+                        <span>전체 현황</span>
+                    </button>
+                    <button class="analysis-tab" data-view="workload" onclick="switchView('workload')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="20" x2="18" y2="10"/>
+                            <line x1="12" y1="20" x2="12" y2="4"/>
+                            <line x1="6" y1="20" x2="6" y2="14"/>
+                        </svg>
+                        <span>업무량 분석</span>
+                    </button>
+                    <button class="analysis-tab" data-view="performance" onclick="switchView('performance')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                        </svg>
+                        <span>역량 평가</span>
+                    </button>
+                    <button class="analysis-tab" data-view="team" onclick="switchView('team')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                        </svg>
+                        <span>팀별 통계</span>
+                    </button>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="date-range-picker">
+                    <button class="date-range-btn" onclick="toggleDatePicker()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                            <line x1="16" y1="2" x2="16" y2="6"/>
+                            <line x1="8" y1="2" x2="8" y2="6"/>
+                            <line x1="3" y1="10" x2="21" y2="10"/>
+                        </svg>
+                        <span id="dateRangeText">최근 30일</span>
+                    </button>
+                    <div class="date-picker-dropdown" id="datePicker">
+                        <button onclick="setDateRange('7d')">최근 7일</button>
+                        <button onclick="setDateRange('30d')" class="active">최근 30일</button>
+                        <button onclick="setDateRange('90d')">최근 90일</button>
+                        <button onclick="setDateRange('year')">올해</button>
+                    </div>
+                </div>
+                <button class="btn-icon" onclick="refreshData()" title="새로고침">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="23 4 23 10 17 10"/>
+                        <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- 메인 컨텐츠 -->
+        <main class="analytics-main">
+            <!-- 전체 현황 뷰 -->
+            <section class="analytics-view active" id="overviewView">
+                <!-- 요약 카드 -->
+                <div class="summary-cards">
+                    <div class="summary-card">
+                        <div class="summary-icon requests">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                                <polyline points="14 2 14 8 20 8"/>
+                            </svg>
+                        </div>
+                        <div class="summary-content">
+                            <span class="summary-label">총 신청서</span>
+                            <span class="summary-value" id="totalRequests">0</span>
+                            <span class="summary-change positive" id="requestsChange">+0%</span>
+                        </div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-icon completed">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
+                                <polyline points="22 4 12 14.01 9 11.01"/>
+                            </svg>
+                        </div>
+                        <div class="summary-content">
+                            <span class="summary-label">완료됨</span>
+                            <span class="summary-value" id="completedRequests">0</span>
+                            <span class="summary-change positive" id="completedChange">+0%</span>
+                        </div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-icon pending">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <polyline points="12 6 12 12 16 14"/>
+                            </svg>
+                        </div>
+                        <div class="summary-content">
+                            <span class="summary-label">처리 중</span>
+                            <span class="summary-value" id="pendingRequests">0</span>
+                            <span class="summary-change" id="pendingChange">0건</span>
+                        </div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-icon avg-time">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                                <polyline points="17 6 23 6 23 12"/>
+                            </svg>
+                        </div>
+                        <div class="summary-content">
+                            <span class="summary-label">평균 처리시간</span>
+                            <span class="summary-value" id="avgProcessingTime">0일</span>
+                            <span class="summary-change negative" id="timeChange">-0%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 차트 섹션 -->
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3>📊 일별 신청서 추이</h3>
+                        </div>
+                        <div class="chart-body">
+                            <canvas id="dailyTrendChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3>📈 카테고리별 분포</h3>
+                        </div>
+                        <div class="chart-body">
+                            <canvas id="categoryChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3>⚡ 우선순위별 현황</h3>
+                        </div>
+                        <div class="chart-body">
+                            <canvas id="priorityChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3>🔄 상태별 현황</h3>
+                        </div>
+                        <div class="chart-body">
+                            <canvas id="statusChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 최근 신청서 목록 -->
+                <div class="recent-requests-card">
+                    <div class="card-header">
+                        <h3>📋 최근 신청서</h3>
+                        <a href="app.html#/requests" class="view-all-link">전체 보기 →</a>
+                    </div>
+                    <div class="requests-table" id="recentRequestsTable">
+                        <!-- 동적으로 렌더링 -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- 업무량 분석 뷰 -->
+            <section class="analytics-view" id="workloadView">
+                <div class="workload-header">
+                    <h2>👤 개인별 업무량 분석</h2>
+                    <div class="user-selector">
+                        <select id="userSelect" onchange="loadUserWorkload()">
+                            <option value="">사용자 선택</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="workload-content" id="workloadContent">
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="12" y1="8" x2="12" y2="12"/>
+                            <line x1="12" y1="16" x2="12.01" y2="16"/>
+                        </svg>
+                        <p>사용자를 선택하면 업무량 분석 결과가 표시됩니다.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 역량 평가 뷰 -->
+            <section class="analytics-view" id="performanceView">
+                <div class="performance-header">
+                    <h2>⭐ 담당자 역량 평가</h2>
+                    <div class="assignee-selector">
+                        <select id="assigneeSelect" onchange="loadAssigneePerformance()">
+                            <option value="">담당자 선택</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="performance-content" id="performanceContent">
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                        </svg>
+                        <p>담당자를 선택하면 역량 평가 결과가 표시됩니다.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 팀별 통계 뷰 -->
+            <section class="analytics-view" id="teamView">
+                <div class="team-header">
+                    <h2>👥 팀별 업무 통계</h2>
+                </div>
+
+                <div class="team-stats-grid" id="teamStatsGrid">
+                    <!-- 동적으로 렌더링 -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- 토스트 알림 -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/auth-check.js"></script>
+    <script src="js/graph-db.js"></script>
+    <script src="js/analytics.js"></script>
+</body>
+</html>
+

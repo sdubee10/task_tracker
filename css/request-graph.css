@@ -664,6 +664,39 @@
     cursor: pointer;
 }
 
+/* 날짜 범위 필터 */
+.custom-date-range {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.custom-date-range input[type="date"] {
+    padding: 6px 10px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.custom-date-range input[type="date"]:hover {
+    border-color: var(--accent-primary);
+}
+
+.custom-date-range input[type="date"]:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(var(--accent-primary-rgb), 0.1);
+}
+
+.custom-date-range span {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
 .graph-canvas {
     flex: 1;
     position: relative;

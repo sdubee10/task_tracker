@@ -2440,13 +2440,81 @@ function renderCanvas() {
         `;
         canvas.classList.remove('has-items');
     } else {
-        canvas.innerHTML = formComponents.map(comp => renderComponent(comp)).join('');
+        // 컴포넌트들 + 하단 드롭 힌트 영역
+        const componentsHtml = formComponents.map(comp => renderComponent(comp)).join('');
+        const dropHintHtml = `
+            <div class="canvas-drop-hint" 
+                 ondragover="handleDropHintDragOver(event)" 
+                 ondragleave="handleDropHintDragLeave(event)"
+                 ondrop="handleDropHintDrop(event)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/>
+                    <path d="M12 8v8M8 12h8"/>
+                </svg>
+                <p>컴포넌트를 여기에 드롭하세요</p>
+                <span class="hint-text">새 컴포넌트가 맨 아래에 추가됩니다</span>
+            </div>
+        `;
+        canvas.innerHTML = componentsHtml + dropHintHtml;
         canvas.classList.add('has-items');
         
         setupComponentDragAndDrop();
         setupComponentResizeHandles();
     }
 }
+
+// 드롭 힌트 영역 드래그 오버 처리
+function handleDropHintDragOver(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    event.dataTransfer.dropEffect = 'copy';
+    
+    const dropHint = event.currentTarget;
+    dropHint.classList.add('drag-over');
+}
+
+// 드롭 힌트 영역 드래그 리브 처리
+function handleDropHintDragLeave(event) {
+    event.preventDefault();
+    const dropHint = event.currentTarget;
+    dropHint.classList.remove('drag-over');
+}
+
+// 드롭 힌트 영역에 드롭 처리
+function handleDropHintDrop(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    const dropHint = event.currentTarget;
+    dropHint.classList.remove('drag-over');
+    
+    const canvas = document.getElementById('formCanvas');
+    canvas.classList.remove('drag-over');
+    removeDropIndicator();
+    
+    // 팔레트에서 드래그한 컴포넌트인 경우
+    if (draggedFromPalette && draggedComponent) {
+        const newComponent = createComponent(draggedComponent);
+        
+        saveToUndoStack();
+        
+        // 맨 아래에 추가
+        formComponents.push(newComponent);
+        
+        renderCanvas();
+        selectComponent(newComponent.id);
+        showToast('컴포넌트가 추가되었습니다.', 'success');
+        
+        // 드래그 상태 초기화
+        draggedFromPalette = false;
+        draggedComponent = null;
+    }
+}
+
+// 전역으로 노출
+window.handleDropHintDragOver = handleDropHintDragOver;
+window.handleDropHintDragLeave = handleDropHintDragLeave;
+window.handleDropHintDrop = handleDropHintDrop;
 
 function renderComponent(component) {
     const isSelected = component.id === selectedComponentId;

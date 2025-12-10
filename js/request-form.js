@@ -786,6 +786,373 @@ function saveDraft() {
     showToast('임시저장되었습니다.', 'success');
 }
 
+// ===== AI 검증 기능 =====
+
+// AI 검증 상태
+let aiValidationResult = null;
+let isValidating = false;
+
+// AI 검증 실행
+async function validateWithAI() {
+    if (isValidating) return;
+    
+    collectFormData();
+    
+    // 필수 필드 검증
+    const basicValidation = validateBasicFields();
+    if (!basicValidation.isValid) {
+        showAIValidationModal({
+            status: 'error',
+            title: '필수 항목 누락',
+            message: '신청서를 제출하기 전에 필수 항목을 모두 입력해주세요.',
+            issues: basicValidation.issues,
+            suggestions: ['빨간색으로 표시된 필수 항목을 확인해주세요.'],
+            score: 0
+        });
+        return;
+    }
+    
+    isValidating = true;
+    showAIValidationModal({ status: 'loading' });
+    
+    try {
+        // AI 검증 시뮬레이션 (실제로는 API 호출)
+        const result = await simulateAIValidation(formData, selectedTemplate);
+        aiValidationResult = result;
+        showAIValidationModal(result);
+    } catch (error) {
+        console.error('AI Validation error:', error);
+        showAIValidationModal({
+            status: 'error',
+            title: '검증 오류',
+            message: 'AI 검증 중 오류가 발생했습니다. 다시 시도해주세요.',
+            issues: [],
+            suggestions: []
+        });
+    } finally {
+        isValidating = false;
+    }
+}
+
+// 기본 필드 검증
+function validateBasicFields() {
+    const issues = [];
+    
+    if (!selectedTemplate) {
+        issues.push({ field: '템플릿', message: '템플릿을 선택해주세요.' });
+    }
+    
+    // 필수 입력 필드 확인
+    const requiredFields = document.querySelectorAll('[required]');
+    requiredFields.forEach(field => {
+        if (!field.value || field.value.trim() === '') {
+            const label = field.closest('.form-field')?.querySelector('label')?.textContent || field.name || '필드';
+            issues.push({ field: label.replace('*', '').trim(), message: '필수 입력 항목입니다.' });
+        }
+    });
+    
+    // 제목 확인
+    let hasTitle = false;
+    for (const [key, field] of Object.entries(formData.fieldValues || {})) {
+        if (field.label?.includes('제목') && field.value && field.value.trim()) {
+            hasTitle = true;
+            break;
+        }
+    }
+    
+    if (!hasTitle) {
+        // 제목 컴포넌트가 없으면 기본 템플릿 제목 사용
+        hasTitle = !!selectedTemplate?.formTitle;
+    }
+    
+    return {
+        isValid: issues.length === 0,
+        issues
+    };
+}
+
+// AI 검증 시뮬레이션 (실제 구현 시 API 호출로 대체)
+async function simulateAIValidation(formData, template) {
+    // 로딩 시뮬레이션
+    await new Promise(resolve => setTimeout(resolve, 1500 + Math.random() * 1000));
+    
+    const issues = [];
+    const suggestions = [];
+    let score = 100;
+    
+    const fieldValues = formData.fieldValues || {};
+    const category = template?.category || '공통';
+    
+    // 1. 내용 길이 검증
+    for (const [key, field] of Object.entries(fieldValues)) {
+        if (field.componentType === 'textarea' && field.value) {
+            const length = field.value.length;
+            if (length < 20) {
+                issues.push({
+                    field: field.label || '상세 내용',
+                    message: '내용이 너무 짧습니다. 더 자세한 설명을 추가해주세요.',
+                    severity: 'warning'
+                });
+                suggestions.push(`"${field.label || '상세 내용'}" 항목에 구체적인 내용을 추가하면 처리 시간이 단축됩니다.`);
+                score -= 15;
+            } else if (length < 50) {
+                suggestions.push(`"${field.label || '상세 내용'}" 항목에 조금 더 상세한 설명을 추가하면 좋습니다.`);
+                score -= 5;
+            }
+        }
+    }
+    
+    // 2. 마감일 검증
+    let hasDueDate = false;
+    let dueDate = null;
+    for (const [key, field] of Object.entries(fieldValues)) {
+        if ((field.componentType === 'deadline-input' || field.componentType === 'date-input') && field.value) {
+            hasDueDate = true;
+            dueDate = new Date(field.value);
+            break;
+        }
+    }
+    
+    if (!hasDueDate) {
+        suggestions.push('마감일을 지정하면 우선순위 배정에 도움이 됩니다.');
+        score -= 5;
+    } else if (dueDate) {
+        const today = new Date();
+        const diffDays = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
+        
+        if (diffDays < 0) {
+            issues.push({
+                field: '마감일',
+                message: '마감일이 과거 날짜입니다.',
+                severity: 'error'
+            });
+            score -= 20;
+        } else if (diffDays < 2) {
+            issues.push({
+                field: '마감일',
+                message: '마감일이 너무 촉박합니다. 처리가 어려울 수 있습니다.',
+                severity: 'warning'
+            });
+            suggestions.push('긴급한 요청인 경우 우선순위를 "긴급"으로 설정해주세요.');
+            score -= 10;
+        }
+    }
+    
+    // 3. 우선순위 검증
+    let priority = 'medium';
+    for (const [key, field] of Object.entries(fieldValues)) {
+        if (field.componentType === 'priority-select' && field.value) {
+            priority = field.value;
+            break;
+        }
+    }
+    
+    if (priority === 'urgent' && hasDueDate && dueDate) {
+        const diffDays = Math.ceil((dueDate - new Date()) / (1000 * 60 * 60 * 24));
+        if (diffDays > 7) {
+            suggestions.push('마감일이 7일 이상 남았는데 긴급으로 설정되어 있습니다. 우선순위를 재검토해주세요.');
+            score -= 5;
+        }
+    }
+    
+    // 4. 카테고리별 특수 검증
+    if (category === 'DBA') {
+        // SQL 쿼리나 테이블명 확인
+        let hasTableInfo = false;
+        for (const [key, field] of Object.entries(fieldValues)) {
+            if (field.value && (field.value.includes('테이블') || field.value.includes('TABLE') || field.value.includes('SELECT'))) {
+                hasTableInfo = true;
+                break;
+            }
+        }
+        if (!hasTableInfo) {
+            suggestions.push('DBA 요청 시 관련 테이블명이나 쿼리 정보를 포함하면 처리가 빨라집니다.');
+        }
+    } else if (category === 'Frontend' || category === 'Backend') {
+        // 화면명이나 API 정보 확인
+        let hasScreenInfo = false;
+        for (const [key, field] of Object.entries(fieldValues)) {
+            if (field.value && (field.value.includes('화면') || field.value.includes('페이지') || field.value.includes('API') || field.value.includes('URL'))) {
+                hasScreenInfo = true;
+                break;
+            }
+        }
+        if (!hasScreenInfo) {
+            suggestions.push('개발 요청 시 관련 화면명이나 API 정보를 포함하면 좋습니다.');
+        }
+    } else if (category === '보안') {
+        // 보안 관련 정보 확인
+        suggestions.push('보안 관련 요청은 처리 시간이 다소 소요될 수 있습니다.');
+    }
+    
+    // 5. 첨부파일 확인
+    let hasAttachment = false;
+    for (const [key, field] of Object.entries(fieldValues)) {
+        if (field.componentType === 'file-upload' && field.value) {
+            hasAttachment = true;
+            break;
+        }
+    }
+    
+    if (!hasAttachment && (category === 'QA' || category === 'Frontend')) {
+        suggestions.push('스크린샷이나 참고 자료를 첨부하면 이해가 빠릅니다.');
+    }
+    
+    // 점수 보정
+    score = Math.max(0, Math.min(100, score));
+    
+    // 상태 결정
+    let status = 'success';
+    if (issues.some(i => i.severity === 'error')) {
+        status = 'error';
+    } else if (issues.some(i => i.severity === 'warning') || score < 70) {
+        status = 'warning';
+    }
+    
+    // 결과 메시지
+    let title, message;
+    if (status === 'success') {
+        title = '검증 완료 ✓';
+        message = '신청서가 잘 작성되었습니다. 제출해도 좋습니다!';
+    } else if (status === 'warning') {
+        title = '개선 권장 사항 있음';
+        message = '신청서를 제출할 수 있지만, 아래 사항을 개선하면 더 빠른 처리가 가능합니다.';
+    } else {
+        title = '수정 필요';
+        message = '아래 문제를 해결한 후 다시 검증해주세요.';
+    }
+    
+    return {
+        status,
+        title,
+        message,
+        score,
+        issues,
+        suggestions,
+        timestamp: new Date().toISOString()
+    };
+}
+
+// AI 검증 모달 표시
+function showAIValidationModal(result) {
+    // 기존 모달 제거
+    const existingModal = document.getElementById('aiValidationModal');
+    if (existingModal) existingModal.remove();
+    
+    let modalContent = '';
+    
+    if (result.status === 'loading') {
+        modalContent = `
+            <div class="ai-validation-modal">
+                <div class="ai-validation-loading">
+                    <div class="ai-spinner"></div>
+                    <h3>AI가 신청서를 검토하고 있습니다...</h3>
+                    <p>잠시만 기다려주세요</p>
+                </div>
+            </div>
+        `;
+    } else {
+        const statusIcon = result.status === 'success' ? '✅' : result.status === 'warning' ? '⚠️' : '❌';
+        const statusClass = result.status;
+        
+        modalContent = `
+            <div class="ai-validation-modal">
+                <div class="ai-validation-header ${statusClass}">
+                    <div class="ai-status-icon">${statusIcon}</div>
+                    <div class="ai-status-info">
+                        <h3>${result.title}</h3>
+                        <p>${result.message}</p>
+                    </div>
+                    ${result.score !== undefined ? `
+                        <div class="ai-score">
+                            <div class="ai-score-circle ${statusClass}">
+                                <span class="ai-score-value">${result.score}</span>
+                                <span class="ai-score-label">점</span>
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+                
+                ${result.issues && result.issues.length > 0 ? `
+                    <div class="ai-validation-section">
+                        <h4>📋 검토 결과</h4>
+                        <ul class="ai-issues-list">
+                            ${result.issues.map(issue => `
+                                <li class="ai-issue-item ${issue.severity || 'info'}">
+                                    <span class="ai-issue-field">${issue.field}</span>
+                                    <span class="ai-issue-message">${issue.message}</span>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                ` : ''}
+                
+                ${result.suggestions && result.suggestions.length > 0 ? `
+                    <div class="ai-validation-section">
+                        <h4>💡 AI 추천 사항</h4>
+                        <ul class="ai-suggestions-list">
+                            ${result.suggestions.map(s => `<li>${s}</li>`).join('')}
+                        </ul>
+                    </div>
+                ` : ''}
+                
+                <div class="ai-validation-actions">
+                    <button class="btn btn-secondary" onclick="closeAIValidationModal()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                            <path d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
+                        </svg>
+                        수정하기
+                    </button>
+                    ${result.status !== 'error' ? `
+                        <button class="btn btn-primary" onclick="closeAIValidationModal(); submitRequest();">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                            </svg>
+                            ${result.status === 'success' ? '제출하기' : '그래도 제출하기'}
+                        </button>
+                    ` : `
+                        <button class="btn btn-primary" onclick="closeAIValidationModal(); validateWithAI();">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                <path d="M23 4v6h-6M1 20v-6h6"/>
+                                <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+                            </svg>
+                            다시 검증하기
+                        </button>
+                    `}
+                </div>
+            </div>
+        `;
+    }
+    
+    const modalHtml = `
+        <div class="modal-overlay show" id="aiValidationModal" onclick="closeAIValidationModal(event)">
+            <div class="modal modal-lg" onclick="event.stopPropagation()">
+                <div class="modal-header">
+                    <h3>🤖 AI 신청서 검증</h3>
+                    <button class="btn-icon" onclick="closeAIValidationModal()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    ${modalContent}
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+// AI 검증 모달 닫기
+function closeAIValidationModal(event) {
+    if (event && event.target.id !== 'aiValidationModal') return;
+    const modal = document.getElementById('aiValidationModal');
+    if (modal) modal.remove();
+}
+
 function submitRequest() {
     collectFormData();
     
@@ -961,4 +1328,6 @@ window.handleFileSelect = handleFileSelect;
 window.refreshTemplates = refreshTemplates;
 window.filterTemplatesByCategory = filterTemplatesByCategory;
 window.filterTemplates = filterTemplates;
+window.validateWithAI = validateWithAI;
+window.closeAIValidationModal = closeAIValidationModal;
 

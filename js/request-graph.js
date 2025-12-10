@@ -826,9 +826,11 @@ function renderNodes() {
     // 필터링
     const statusFilter = document.getElementById('statusFilter').value;
     const departmentFilter = document.getElementById('departmentFilter').value;
+    const dateRange = getDateFilterRange();
     
     let filteredNodes = nodes;
     
+    // 상태 필터
     if (statusFilter !== 'all') {
         filteredNodes = filteredNodes.filter(node => {
             if (node.type === 'request') {
@@ -843,8 +845,14 @@ function renderNodes() {
         });
     }
     
+    // 부서 필터
     if (departmentFilter !== 'all') {
         filteredNodes = filteredNodes.filter(node => node.data.department === departmentFilter);
+    }
+    
+    // 날짜 범위 필터
+    if (dateRange) {
+        filteredNodes = filteredNodes.filter(node => isNodeInDateRange(node, dateRange));
     }
     
     container.innerHTML = filteredNodes.map(node => {
@@ -2008,6 +2016,90 @@ function filterByStatus() {
 
 function filterByDepartment() {
     renderGraph();
+}
+
+// 날짜 범위 필터
+function filterByDateRange() {
+    const dateRangeFilter = document.getElementById('dateRangeFilter').value;
+    const customDateRange = document.getElementById('customDateRange');
+    
+    if (dateRangeFilter === 'custom') {
+        customDateRange.style.display = 'flex';
+    } else {
+        customDateRange.style.display = 'none';
+    }
+    
+    renderGraph();
+}
+
+// 날짜 필터 계산
+function getDateFilterRange() {
+    const dateRangeFilter = document.getElementById('dateRangeFilter')?.value || 'all';
+    
+    if (dateRangeFilter === 'all') {
+        return null;
+    }
+    
+    const now = new Date();
+    let startDate = null;
+    let endDate = now;
+    
+    switch (dateRangeFilter) {
+        case 'today':
+            startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            break;
+        case 'week':
+            startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            break;
+        case 'month':
+            startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+            break;
+        case 'quarter':
+            startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+            break;
+        case 'halfyear':
+            startDate = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000);
+            break;
+        case 'year':
+            startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+            break;
+        case 'custom':
+            const customStart = document.getElementById('startDate')?.value;
+            const customEnd = document.getElementById('endDate')?.value;
+            if (customStart) startDate = new Date(customStart);
+            if (customEnd) endDate = new Date(customEnd + 'T23:59:59');
+            break;
+    }
+    
+    return { startDate, endDate };
+}
+
+// 노드가 날짜 범위에 포함되는지 확인
+function isNodeInDateRange(node, dateRange) {
+    if (!dateRange) return true;
+    
+    const { startDate, endDate } = dateRange;
+    
+    if (node.type === 'request') {
+        // 신청서 노드는 생성일 또는 제출일 기준
+        const nodeDate = new Date(node.data.createdAt || node.data.submittedAt || node.data.deadline);
+        if (isNaN(nodeDate.getTime())) return true; // 날짜가 없으면 포함
+        
+        if (startDate && nodeDate < startDate) return false;
+        if (endDate && nodeDate > endDate) return false;
+        return true;
+    } else {
+        // 담당자 노드는 연결된 신청서 중 하나라도 범위 내에 있으면 표시
+        const connections = graphDB.getConnectedNodes(node.id);
+        return connections.some(conn => {
+            if (conn.type !== 'request') return false;
+            const connDate = new Date(conn.data.createdAt || conn.data.submittedAt || conn.data.deadline);
+            if (isNaN(connDate.getTime())) return true;
+            
+            const inRange = (!startDate || connDate >= startDate) && (!endDate || connDate <= endDate);
+            return inRange;
+        });
+    }
 }
 
 function filterByTeam(teamId) {

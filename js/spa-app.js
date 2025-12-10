@@ -195,13 +195,290 @@ class App {
         
         // formData가 없는 기존 데이터가 있거나, 데이터가 없으면 새로 생성
         const hasFormData = existingRequests.some(r => r.formData && Object.keys(r.formData).length > 0);
+        // 1년치 데이터가 있는지 확인
+        const hasYearlyData = existingRequests.some(r => r.id && r.id.includes('YEARLY'));
+        // 로그인 사용자용 평가 가능 신청서 확인
+        const hasEvaluatableRequests = existingRequests.some(r => r.id && r.id.includes('EVAL'));
         
         if (existingRequests.length === 0 || !hasFormData) {
             console.log('Generating sample requests with full form data...');
             const sampleRequests = this.generateSampleRequests();
-            localStorage.setItem('taskflowRequests', JSON.stringify(sampleRequests));
-            console.log('Generated', sampleRequests.length, 'sample requests');
+            // 1년치 업무 처리 데이터 추가
+            const yearlyRequests = this.generateYearlyProcessedRequests();
+            // 로그인 사용자용 평가 가능 신청서 추가
+            const evaluatableRequests = this.generateEvaluatableRequests();
+            const allRequests = [...yearlyRequests, ...evaluatableRequests, ...sampleRequests];
+            localStorage.setItem('taskflowRequests', JSON.stringify(allRequests));
+            console.log('Generated', allRequests.length, 'sample requests (including yearly and evaluatable data)');
+        } else if (!hasYearlyData) {
+            // 1년치 데이터만 없으면 추가
+            console.log('Adding yearly processed requests...');
+            const yearlyRequests = this.generateYearlyProcessedRequests();
+            const evaluatableRequests = this.generateEvaluatableRequests();
+            const allRequests = [...yearlyRequests, ...evaluatableRequests, ...existingRequests];
+            localStorage.setItem('taskflowRequests', JSON.stringify(allRequests));
+            console.log('Added', yearlyRequests.length, 'yearly requests and evaluatable requests');
+        } else if (!hasEvaluatableRequests) {
+            // 평가 가능 신청서가 없으면 추가
+            console.log('Adding evaluatable requests for demo users...');
+            const evaluatableRequests = this.generateEvaluatableRequests();
+            const allRequests = [...evaluatableRequests, ...existingRequests];
+            localStorage.setItem('taskflowRequests', JSON.stringify(allRequests));
+            console.log('Added', evaluatableRequests.length, 'evaluatable requests');
         }
+    }
+    
+    // 로그인 사용자용 평가 가능 신청서 생성 (데모 계정이 요청자인 완료된 신청서)
+    generateEvaluatableRequests() {
+        const now = new Date();
+        
+        // 데모 계정들 (로그인 가능한 사용자) - ID는 login.js의 authenticateUser와 일치해야 함
+        const demoUsers = {
+            admin: { id: 'admin', name: '관리자', email: 'admin@taskflow.com', team: '시스템관리팀', department: '경영지원' },
+            manager: { id: 'manager', name: '김매니저', email: 'manager@taskflow.com', team: 'Backend팀', department: '개발본부' },
+            user: { id: 'user', name: '이사원', email: 'user@taskflow.com', team: 'Frontend팀', department: '개발본부' }
+        };
+        
+        // 담당자들
+        const assignees = [
+            { id: 'assign-1', name: '박민수', team: 'Backend팀', role: '팀장' },
+            { id: 'assign-2', name: '이영희', team: 'Frontend팀', role: '팀장' },
+            { id: 'assign-3', name: '최수진', team: 'Infra팀', role: '과장' },
+            { id: 'assign-4', name: '정민호', team: 'QA팀', role: '대리' }
+        ];
+        
+        const requests = [];
+        
+        // 각 데모 사용자별로 완료된 신청서 2-3개씩 생성
+        Object.entries(demoUsers).forEach(([userType, user], userIdx) => {
+            const userRequests = [
+                {
+                    title: `${user.name}님의 API 개발 요청`,
+                    templateId: 'sample_be_001',
+                    templateName: 'API 개발 요청서',
+                    templateCategory: 'Backend',
+                    description: 'REST API 신규 개발 요청입니다.',
+                    assignee: assignees[0]
+                },
+                {
+                    title: `${user.name}님의 화면 개발 요청`,
+                    templateId: 'sample_fe_001',
+                    templateName: '화면 개발 요청서',
+                    templateCategory: 'Frontend',
+                    description: '관리자 대시보드 화면 개발 요청입니다.',
+                    assignee: assignees[1]
+                },
+                {
+                    title: `${user.name}님의 서버 증설 요청`,
+                    templateId: 'sample_infra_001',
+                    templateName: '서버 증설 요청서',
+                    templateCategory: 'Infra',
+                    description: '서비스 확장을 위한 서버 증설 요청입니다.',
+                    assignee: assignees[2]
+                }
+            ];
+            
+            userRequests.forEach((reqData, reqIdx) => {
+                const createdDate = new Date(now.getTime() - (30 + userIdx * 10 + reqIdx * 5) * 24 * 60 * 60 * 1000);
+                const completedDate = new Date(createdDate.getTime() + (3 + reqIdx) * 24 * 60 * 60 * 1000);
+                
+                requests.push({
+                    id: `REQ-EVAL-${userType.toUpperCase()}-${String(reqIdx + 1).padStart(3, '0')}`,
+                    title: reqData.title,
+                    templateId: reqData.templateId,
+                    templateName: reqData.templateName,
+                    templateCategory: reqData.templateCategory,
+                    status: 'completed',
+                    priority: ['medium', 'high', 'urgent'][reqIdx % 3],
+                    requester: {
+                        id: user.id,
+                        name: user.name,
+                        email: user.email,
+                        team: user.team
+                    },
+                    assignees: [reqData.assignee],
+                    targetTeam: { name: reqData.templateCategory + '팀' },
+                    formData: {
+                        title: reqData.title,
+                        description: reqData.description,
+                        priority: ['medium', 'high', 'urgent'][reqIdx % 3],
+                        requesterName: user.name,
+                        requesterTeam: user.team,
+                        requesterEmail: user.email
+                    },
+                    createdAt: createdDate.toISOString(),
+                    submittedAt: createdDate.toISOString(),
+                    acceptedAt: new Date(createdDate.getTime() + 1 * 24 * 60 * 60 * 1000).toISOString(),
+                    completedAt: completedDate.toISOString(),
+                    completedBy: reqData.assignee.name,
+                    history: [
+                        { type: 'submitted', action: '신청서 제출', timestamp: createdDate.toISOString(), user: user.name },
+                        { type: 'accepted', action: '신청서 접수', timestamp: new Date(createdDate.getTime() + 1 * 24 * 60 * 60 * 1000).toISOString(), user: reqData.assignee.name },
+                        { type: 'completed', action: '처리 완료', timestamp: completedDate.toISOString(), user: reqData.assignee.name }
+                    ]
+                });
+            });
+        });
+        
+        return requests;
+    }
+    
+    // 1년치 업무 처리 신청서 데이터 생성 (특정 팀/담당자 기준)
+    generateYearlyProcessedRequests() {
+        const now = new Date();
+        const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+        
+        // 특정 팀: Backend팀, Frontend팀 담당자들
+        const targetAssignees = [
+            { id: 'be-1', name: '박민수', team: 'Backend팀', position: '팀장', email: 'mspark@company.com' },
+            { id: 'be-2', name: '유재석', team: 'Backend팀', position: '차장', email: 'jsyoo@company.com' },
+            { id: 'be-3', name: '신동욱', team: 'Backend팀', position: '과장', email: 'dwshin@company.com' },
+            { id: 'fe-1', name: '이영희', team: 'Frontend팀', position: '팀장', email: 'yhlee@company.com' },
+            { id: 'fe-2', name: '조예진', team: 'Frontend팀', position: '과장', email: 'yjjo@company.com' },
+            { id: 'fe-3', name: '김다은', team: 'Frontend팀', position: '대리', email: 'dekim@company.com' }
+        ];
+        
+        // 요청자들
+        const requesters = [
+            { id: 'req-1', name: '김철수', team: '마케팅팀', email: 'cskim@company.com' },
+            { id: 'req-2', name: '이수진', team: '영업팀', email: 'sjlee@company.com' },
+            { id: 'req-3', name: '박지영', team: '기획팀', email: 'jypark@company.com' },
+            { id: 'req-4', name: '최민호', team: '재무팀', email: 'mhchoi@company.com' },
+            { id: 'req-5', name: '정하늘', team: '인사팀', email: 'hnjung@company.com' }
+        ];
+        
+        // 1년치 업무 데이터 (월별로 다양하게)
+        const yearlyTaskData = [
+            // 1월 - 연초 계획 관련
+            { month: 0, title: '2024년 신규 API 개발 요청', category: 'Backend', type: 'API 개발', priority: 'high', description: '2024년 신규 서비스를 위한 REST API 개발 요청입니다.' },
+            { month: 0, title: '관리자 대시보드 리뉴얼', category: 'Frontend', type: '화면 개발', priority: 'high', description: '관리자 페이지 전면 리뉴얼 작업입니다.' },
+            
+            // 2월 - 기능 개선
+            { month: 1, title: '결제 모듈 성능 개선', category: 'Backend', type: '성능 개선', priority: 'urgent', description: '결제 처리 속도 개선이 필요합니다.' },
+            { month: 1, title: '모바일 반응형 개선', category: 'Frontend', type: 'UI/UX 개선', priority: 'medium', description: '모바일 환경에서의 사용성 개선 요청입니다.' },
+            
+            // 3월 - 신규 기능
+            { month: 2, title: '회원 등급 시스템 API 개발', category: 'Backend', type: 'API 개발', priority: 'high', description: '회원 등급에 따른 혜택 시스템 API입니다.' },
+            { month: 2, title: '마이페이지 포인트 화면 개발', category: 'Frontend', type: '화면 개발', priority: 'medium', description: '포인트 조회 및 사용 내역 화면입니다.' },
+            
+            // 4월 - 버그 수정
+            { month: 3, title: '주문 취소 오류 긴급 수정', category: 'Backend', type: '버그 수정', priority: 'urgent', description: '주문 취소 시 환불 처리가 안되는 버그입니다.' },
+            { month: 3, title: '장바구니 UI 버그 수정', category: 'Frontend', type: '버그 수정', priority: 'high', description: '장바구니 수량 변경 시 화면이 깨지는 현상입니다.' },
+            
+            // 5월 - 시스템 연동
+            { month: 4, title: '외부 배송사 API 연동', category: 'Backend', type: '시스템 연동', priority: 'high', description: '신규 배송사 시스템 연동 작업입니다.' },
+            { month: 4, title: '배송 추적 화면 개발', category: 'Frontend', type: '화면 개발', priority: 'medium', description: '실시간 배송 추적 화면 개발입니다.' },
+            
+            // 6월 - 상반기 마감
+            { month: 5, title: '상반기 정산 배치 개발', category: 'Backend', type: '배치 작업', priority: 'high', description: '상반기 정산 자동화 배치 프로그램입니다.' },
+            { month: 5, title: '정산 리포트 화면 개발', category: 'Frontend', type: '화면 개발', priority: 'medium', description: '정산 내역 조회 및 다운로드 화면입니다.' },
+            
+            // 7월 - 여름 프로모션
+            { month: 6, title: '여름 프로모션 API 개발', category: 'Backend', type: 'API 개발', priority: 'urgent', description: '여름 시즌 할인 이벤트 API입니다.' },
+            { month: 6, title: '이벤트 랜딩 페이지 개발', category: 'Frontend', type: '화면 개발', priority: 'high', description: '프로모션 전용 랜딩 페이지입니다.' },
+            
+            // 8월 - 성능 최적화
+            { month: 7, title: '검색 API 성능 최적화', category: 'Backend', type: '성능 개선', priority: 'high', description: '상품 검색 속도 개선 작업입니다.' },
+            { month: 7, title: '이미지 로딩 최적화', category: 'Frontend', type: '성능 개선', priority: 'medium', description: '이미지 lazy loading 적용입니다.' },
+            
+            // 9월 - 추석 대비
+            { month: 8, title: '대량 주문 처리 API 개선', category: 'Backend', type: '성능 개선', priority: 'urgent', description: '추석 대비 주문 폭주 대응입니다.' },
+            
+            // 10월 - 가을 업데이트
+            { month: 9, title: '신규 결제수단 연동', category: 'Backend', type: '시스템 연동', priority: 'high', description: '간편결제 추가 연동 작업입니다.' },
+            
+            // 11월 - 블랙프라이데이
+            { month: 10, title: '블프 이벤트 API 개발', category: 'Backend', type: 'API 개발', priority: 'urgent', description: '블랙프라이데이 특가 이벤트 API입니다.' },
+            { month: 10, title: '타임세일 화면 개발', category: 'Frontend', type: '화면 개발', priority: 'high', description: '시간 제한 특가 화면입니다.' },
+            
+            // 12월 - 연말 정산
+            { month: 11, title: '연말 정산 배치 개발', category: 'Backend', type: '배치 작업', priority: 'high', description: '연말 정산 자동화 배치입니다.' },
+            { month: 11, title: '연간 통계 대시보드 개발', category: 'Frontend', type: '화면 개발', priority: 'medium', description: '연간 실적 통계 대시보드입니다.' }
+        ];
+        
+        const templates = typeof sampleTemplates !== 'undefined' ? sampleTemplates : [];
+        const requests = [];
+        
+        yearlyTaskData.forEach((task, index) => {
+            // 해당 월의 랜덤 날짜 생성 (1년 전 기준)
+            const taskDate = new Date(oneYearAgo.getFullYear(), task.month, Math.floor(Math.random() * 28) + 1);
+            
+            // 카테고리에 맞는 담당자 선택
+            const categoryAssignees = targetAssignees.filter(a => 
+                (task.category === 'Backend' && a.team === 'Backend팀') ||
+                (task.category === 'Frontend' && a.team === 'Frontend팀')
+            );
+            const assignee = categoryAssignees[Math.floor(Math.random() * categoryAssignees.length)];
+            const requester = requesters[Math.floor(Math.random() * requesters.length)];
+            
+            // 템플릿 찾기
+            const templatePrefix = task.category === 'Backend' ? 'sample_be' : 'sample_fe';
+            const template = templates.find(t => t.id.startsWith(templatePrefix)) || templates[0];
+            
+            // 처리 완료 날짜 (요청일 + 3~14일)
+            const processingDays = Math.floor(Math.random() * 11) + 3;
+            const completedDate = new Date(taskDate.getTime() + processingDays * 24 * 60 * 60 * 1000);
+            
+            // formData 생성
+            const formData = template ? this.generateFormDataForTemplate(template, requester, task.priority, completedDate) : {};
+            
+            const request = {
+                id: `REQ-YEARLY-${String(index + 1).padStart(3, '0')}`,
+                title: task.title,
+                description: task.description,
+                templateId: template?.id || 'sample_be_001',
+                templateName: template?.formTitle || task.type,
+                templateCategory: task.category,
+                status: 'completed',
+                priority: task.priority,
+                dueDate: new Date(taskDate.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                requester: requester,
+                targetTeam: { id: task.category.toLowerCase(), name: task.category + '팀' },
+                createdAt: taskDate.toISOString(),
+                submittedAt: taskDate.toISOString(),
+                acceptedAt: new Date(taskDate.getTime() + 1 * 24 * 60 * 60 * 1000).toISOString(),
+                completedAt: completedDate.toISOString(),
+                assignees: [assignee],
+                history: [
+                    {
+                        type: 'submitted',
+                        action: '신청서 제출',
+                        timestamp: taskDate.toISOString(),
+                        user: requester.name
+                    },
+                    {
+                        type: 'accepted',
+                        action: '신청서 접수',
+                        timestamp: new Date(taskDate.getTime() + 1 * 24 * 60 * 60 * 1000).toISOString(),
+                        user: assignee.name
+                    },
+                    {
+                        type: 'assigned',
+                        action: `담당자 배정: ${assignee.name}`,
+                        timestamp: new Date(taskDate.getTime() + 1 * 24 * 60 * 60 * 1000).toISOString(),
+                        user: assignee.name
+                    },
+                    {
+                        type: 'completed',
+                        action: '처리 완료',
+                        timestamp: completedDate.toISOString(),
+                        user: assignee.name
+                    }
+                ],
+                formData: formData,
+                // 평가 데이터 추가
+                evaluation: {
+                    score: Math.floor(Math.random() * 20) + 80, // 80~100점
+                    feedback: ['빠른 처리 감사합니다.', '요청사항이 잘 반영되었습니다.', '친절한 응대 감사합니다.', '기대 이상의 결과물입니다.'][Math.floor(Math.random() * 4)],
+                    evaluatedAt: new Date(completedDate.getTime() + 1 * 24 * 60 * 60 * 1000).toISOString(),
+                    evaluatedBy: requester.name
+                }
+            };
+            
+            requests.push(request);
+        });
+        
+        return requests.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     }
 
     // Generate sample requests with full form data

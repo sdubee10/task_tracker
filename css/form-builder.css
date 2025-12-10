@@ -790,6 +790,7 @@
     border: 2px dashed var(--border-color);
     border-radius: var(--radius-lg);
     padding: 20px;
+    padding-bottom: 200px; /* 드래그 앤 드롭을 위한 하단 여백 */
     transition: all var(--transition-fast);
     display: grid;
     gap: 16px;
@@ -809,6 +810,56 @@
 .form-canvas.has-items {
     border-style: solid;
     border-color: var(--border-color);
+}
+
+/* 드래그 앤 드롭 힌트 영역 */
+.canvas-drop-hint {
+    grid-column: 1 / -1;
+    min-height: 150px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 2px dashed var(--border-color);
+    border-radius: var(--radius-lg);
+    background: linear-gradient(135deg, rgba(255, 107, 53, 0.02), rgba(255, 107, 53, 0.05));
+    color: var(--text-muted);
+    transition: all 0.2s ease;
+    margin-top: 16px;
+    cursor: pointer;
+}
+
+.canvas-drop-hint:hover,
+.form-canvas.drag-over .canvas-drop-hint,
+.canvas-drop-hint.drag-over {
+    border-color: var(--accent-primary);
+    background: linear-gradient(135deg, rgba(255, 107, 53, 0.08), rgba(255, 107, 53, 0.15));
+    color: var(--accent-primary);
+    transform: scale(1.01);
+    box-shadow: 0 4px 20px rgba(255, 107, 53, 0.2);
+}
+
+.canvas-drop-hint svg {
+    width: 40px;
+    height: 40px;
+    margin-bottom: 12px;
+    opacity: 0.5;
+}
+
+.canvas-drop-hint:hover svg,
+.form-canvas.drag-over .canvas-drop-hint svg {
+    opacity: 0.8;
+}
+
+.canvas-drop-hint p {
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.canvas-drop-hint .hint-text {
+    font-size: 0.8rem;
+    opacity: 0.7;
+    margin-top: 4px;
 }
 
 .canvas-placeholder {

@@ -255,6 +255,21 @@
                         <select id="departmentFilter" onchange="filterByDepartment()">
                             <option value="all">모든 부서</option>
                         </select>
+                        <select id="dateRangeFilter" onchange="filterByDateRange()">
+                            <option value="all">전체 기간</option>
+                            <option value="today">오늘</option>
+                            <option value="week">최근 1주</option>
+                            <option value="month">최근 1개월</option>
+                            <option value="quarter">최근 3개월</option>
+                            <option value="halfyear">최근 6개월</option>
+                            <option value="year">최근 1년</option>
+                            <option value="custom">기간 직접 선택</option>
+                        </select>
+                        <div class="custom-date-range" id="customDateRange" style="display: none;">
+                            <input type="date" id="startDate" onchange="filterByDateRange()">
+                            <span>~</span>
+                            <input type="date" id="endDate" onchange="filterByDateRange()">
+                        </div>
                     </div>
                 </div>
                 <div class="graph-canvas" id="graphCanvas">

@@ -152,6 +152,13 @@ const Views = {
                     <div class="view-header">
                         <h1>📋 신청서 목록</h1>
                         <div class="view-header-actions">
+                            <button class="btn btn-secondary btn-refresh" onclick="Views.handleRefreshWithToast()" title="새로고침">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="23 4 23 10 17 10"/>
+                                    <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>
+                                </svg>
+                                새로고침
+                            </button>
                             <div class="view-mode-toggle">
                                 <button class="btn btn-icon ${Views.requests.currentViewMode === 'section' ? 'active' : ''}" 
                                         onclick="Views.setViewMode('section')" title="섹션 뷰">
@@ -604,7 +611,7 @@ const Views = {
                     <iframe 
                         src="form-builder.html" 
                         style="width: 100%; height: 100%; border: none;"
-                        title="요청서 빌더"
+                        title="요청서 만들기"
                     ></iframe>
                 </div>
             `;
@@ -2026,6 +2033,68 @@ const Views = {
         if (summaryEl) {
             summaryEl.innerHTML = `총 <strong>${filtered.length}</strong>건의 신청서 (전체 ${requests.length}건)`;
         }
+    },
+    
+    // 새로고침 + 토스트 알림
+    handleRefreshWithToast: () => {
+        // 전체 뷰 새로고침
+        const requests = Views.getRequests();
+        const currentUser = Views.getCurrentUser();
+        const sections = Views.calculateRequestSections(requests, currentUser);
+        
+        const contentEl = document.getElementById('requestsContent');
+        if (contentEl) {
+            contentEl.innerHTML = Views.requests.currentViewMode === 'section' 
+                ? Views.renderSectionView(sections, requests) 
+                : Views.renderTableView(requests);
+        }
+        
+        // 토스트 알림 표시
+        Views.showRefreshToast();
+    },
+    
+    // 새로고침 토스트 알림
+    showRefreshToast: () => {
+        // 기존 토스트 제거
+        const existingToast = document.querySelector('.refresh-toast');
+        if (existingToast) {
+            existingToast.remove();
+        }
+        
+        // 새 토스트 생성
+        const toast = document.createElement('div');
+        toast.className = 'refresh-toast';
+        toast.innerHTML = `
+            <div class="refresh-toast-content">
+                <div class="refresh-toast-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
+                        <polyline points="22 4 12 14.01 9 11.01"/>
+                    </svg>
+                </div>
+                <div class="refresh-toast-text">
+                    <span class="refresh-toast-title">새로고침 완료</span>
+                    <span class="refresh-toast-message">신청서 목록이 새로고침 되었습니다</span>
+                </div>
+            </div>
+            <button class="refresh-toast-close" onclick="this.parentElement.remove()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        // 애니메이션을 위해 약간의 딜레이 후 show 클래스 추가
+        setTimeout(() => toast.classList.add('show'), 10);
+        
+        // 3초 후 자동 제거
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
     },
     
     // 검색 핸들러

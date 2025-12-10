@@ -54,7 +54,7 @@ class App {
                     '/dashboard': '대시보드',
                     '/requests': '신청서 목록',
                     '/request-form': '신청서 작성',
-                    '/form-builder': '요청서 빌더',
+                    '/form-builder': '요청서 만들기',
                     '/analytics': '업무 분석',
                     '/graph': '신청서 관계'
                 };

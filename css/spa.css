@@ -2618,6 +2618,127 @@ body {
     }
 }
 
+/* ===== Refresh Toast ===== */
+.refresh-toast {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 10001;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
+    border: 1px solid var(--border-color);
+    border-left: 4px solid var(--success);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.2);
+    transform: translateX(120%);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.refresh-toast.show {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.refresh-toast-content {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.refresh-toast-icon {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(34, 197, 94, 0.1));
+    border-radius: 50%;
+    animation: refreshPulse 0.6s ease;
+}
+
+.refresh-toast-icon svg {
+    width: 24px;
+    height: 24px;
+    color: var(--success);
+}
+
+@keyframes refreshPulse {
+    0% {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.refresh-toast-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.refresh-toast-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.refresh-toast-message {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.refresh-toast-close {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: all var(--transition-fast);
+    margin-left: 8px;
+}
+
+.refresh-toast-close:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.refresh-toast-close svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* 새로고침 버튼 스타일 */
+.btn-refresh {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-refresh svg {
+    width: 16px;
+    height: 16px;
+    transition: transform 0.3s ease;
+}
+
+.btn-refresh:hover svg {
+    transform: rotate(180deg);
+}
+
 /* ===== Evaluation Modal ===== */
 .evaluation-modal-overlay {
     position: fixed;

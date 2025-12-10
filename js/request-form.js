@@ -65,7 +65,7 @@ function loadTemplates() {
         templates = getDefaultTemplates();
     }
     
-    // 사용자가 요청서 빌더에서 만든 커스텀 템플릿 로드
+    // 사용자가 요청서 만들기에서 만든 커스텀 템플릿 로드
     const customTemplatesRaw = localStorage.getItem('formTemplates');
     console.log('=== Loading Templates ===');
     console.log('Raw formTemplates:', customTemplatesRaw);
